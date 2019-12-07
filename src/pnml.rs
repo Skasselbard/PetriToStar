@@ -8,13 +8,24 @@ const PLACE_PREFIX: &str = "place_";
 const TRANS_PREFIX: &str = "transition_";
 
 impl PetriNet {
-    pub fn to_xml(&self) -> Result<String> {
+    pub fn to_pnml_string(&self) -> Result<String> {
         let mut writer = Vec::new();
         let mut xml_writer = EmitterConfig::new()
             .perform_indent(true)
             .create_writer(&mut writer);
         self.write_xml(&mut xml_writer)?;
         Ok(String::from_utf8(writer).expect("Document generated non UTF-8 string"))
+    }
+
+    pub fn to_xml<T>(&self, writer: &mut T) -> Result<()>
+    where
+        T: std::io::Write,
+    {
+        let mut xml_writer = EmitterConfig::new()
+            .perform_indent(true)
+            .create_writer(writer);
+        self.write_xml(&mut xml_writer)?;
+        Ok(())
     }
 
     fn write_xml<T>(&self, writer: &mut xml::writer::EventWriter<T>) -> Result<()>

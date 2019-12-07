@@ -1,6 +1,7 @@
 extern crate xml;
 
 mod data;
+mod dot;
 mod error;
 mod lola;
 mod pnml;
@@ -77,6 +78,20 @@ impl PetriNet {
             index: self.arcs.len() - 1,
         })
     }
+
+    /// partition the arcs in transition -> place and place -> transition arcs with
+    /// the corresponding multiplicity
+    pub(crate) fn arcs_partitioned(
+        &self,
+    ) -> (
+        Vec<(NodeRef, NodeRef, usize)>,
+        Vec<(NodeRef, NodeRef, usize)>,
+    ) {
+        self.arcs
+            .iter()
+            .map(|arc| (arc.source, arc.sink, arc.mult))
+            .partition(|(source, _, _)| TransitionRef::try_from(*source).is_ok())
+    }
 }
 
 impl NodeRef {
@@ -108,6 +123,65 @@ impl PlaceRef {
             .ok_or(PetriError::PlaceNotFound)?
             .marking = marking;
         Ok(())
+    }
+    pub fn preset(&self, net: &PetriNet) -> Vec<(TransitionRef, usize)> {
+        let (tp, _) = net.arcs_partitioned();
+        tp.iter()
+            .map(|(source, sink, mult)| {
+                (
+                    TransitionRef::try_from(*source).unwrap(),
+                    PlaceRef::try_from(*sink).unwrap(),
+                    mult,
+                )
+            })
+            .filter(|(place, _, _)| place.index == self.index)
+            .map(|(p, _, mult)| (TransitionRef::try_from(p).unwrap(), *mult))
+            .collect()
+    }
+    pub fn postset(&self, net: &PetriNet) -> Vec<(TransitionRef, usize)> {
+        let (_, pt) = net.arcs_partitioned();
+        pt.iter()
+            .map(|(source, sink, mult)| {
+                (
+                    PlaceRef::try_from(*source).unwrap(),
+                    TransitionRef::try_from(*sink).unwrap(),
+                    mult,
+                )
+            })
+            .filter(|(_, place, _)| place.index == self.index)
+            .map(|(_, p, mult)| (TransitionRef::try_from(p).unwrap(), *mult))
+            .collect()
+    }
+}
+
+impl TransitionRef {
+    pub fn preset(&self, net: &PetriNet) -> Vec<(PlaceRef, usize)> {
+        let (_, pt) = net.arcs_partitioned();
+        pt.iter()
+            .map(|(source, sink, mult)| {
+                (
+                    PlaceRef::try_from(*source).unwrap(),
+                    TransitionRef::try_from(*sink).unwrap(),
+                    mult,
+                )
+            })
+            .filter(|(_, trans, _)| trans.index == self.index)
+            .map(|(p, _, mult)| (PlaceRef::try_from(p).unwrap(), *mult))
+            .collect()
+    }
+    pub fn postset(&self, net: &PetriNet) -> Vec<(PlaceRef, usize)> {
+        let (tp, _) = net.arcs_partitioned();
+        tp.iter()
+            .map(|(source, sink, mult)| {
+                (
+                    TransitionRef::try_from(*source).unwrap(),
+                    PlaceRef::try_from(*sink).unwrap(),
+                    mult,
+                )
+            })
+            .filter(|(trans, _, _)| trans.index == self.index)
+            .map(|(_, p, mult)| (PlaceRef::try_from(p).unwrap(), *mult))
+            .collect()
     }
 }
 

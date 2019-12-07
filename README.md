@@ -1,2 +1,7 @@
 # PetriToStar
-Create petri net data and convert it to other formats
+Create petri nets and convert them to other formats.
+
+supported formats:
+- pnml
+- lola
+- DOT (graphViz)
