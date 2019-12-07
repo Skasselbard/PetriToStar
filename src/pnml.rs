@@ -128,15 +128,17 @@ impl Place {
         writer.write(start_element)?;
         {
             name_to_xml(writer, &self.name)?;
-            writer.write(XmlEvent::start_element("initialMarking"))?;
-            {
-                writer.write(XmlEvent::start_element("text"))?;
+            if self.marking > 0 {
+                writer.write(XmlEvent::start_element("initialMarking"))?;
                 {
-                    writer.write(XmlEvent::Characters(&marking))?;
+                    writer.write(XmlEvent::start_element("text"))?;
+                    {
+                        writer.write(XmlEvent::Characters(&marking))?;
+                    }
+                    writer.write(XmlEvent::end_element())?;
                 }
                 writer.write(XmlEvent::end_element())?;
             }
-            writer.write(XmlEvent::end_element())?;
         }
         writer.write(XmlEvent::end_element())?;
         Ok(())
