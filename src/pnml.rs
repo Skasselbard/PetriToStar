@@ -42,15 +42,21 @@ impl PetriNet {
                 .attr("type", "http://www.pnml.org/version-2009/grammar/ptnet"),
         )?;
         writer.write(XmlEvent::start_element("page").attr("id", "page0"))?;
-        for place in 0..self.places.len() {
-            self.places.get(place).unwrap().to_xml(writer, place)?;
-        }
-        for trans in 0..self.transitions.len() {
-            self.transitions.get(trans).unwrap().to_xml(writer, trans)?;
-        }
-        for arc in 0..self.arcs.len() {
-            self.arcs.get(arc).unwrap().to_xml(writer, arc)?;
-        }
+        if !self.places.is_empty() {
+            for place in 0..self.places.len() - 1 {
+                self.places.get(place).unwrap().to_xml(writer, place)?;
+            }
+        };
+        if !self.transitions.is_empty() {
+            for trans in 0..self.transitions.len() - 1 {
+                self.transitions.get(trans).unwrap().to_xml(writer, trans)?;
+            }
+        };
+        if !self.arcs.is_empty() {
+            for arc in 0..self.arcs.len() - 1 {
+                self.arcs.get(arc).unwrap().to_xml(writer, arc)?;
+            }
+        };
         writer.write(XmlEvent::end_element())?;
         writer.write(XmlEvent::end_element())?;
         writer.write(XmlEvent::end_element())?;
