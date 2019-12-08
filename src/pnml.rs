@@ -17,7 +17,7 @@ impl PetriNet {
         Ok(String::from_utf8(writer).expect("Document generated non UTF-8 string"))
     }
 
-    pub fn to_xml<T>(&self, writer: &mut T) -> Result<()>
+    pub fn to_pnml<T>(&self, writer: &mut T) -> Result<()>
     where
         T: std::io::Write,
     {

@@ -12,6 +12,9 @@ use data::{Arc, Place, Transition};
 use error::PetriError;
 
 pub type Result<T> = std::result::Result<T, PetriError>;
+pub use crate::dot::*;
+pub use crate::lola::*;
+pub use crate::pnml::*;
 
 #[derive(Debug, Clone)]
 pub struct PetriNet {
