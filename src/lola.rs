@@ -38,7 +38,7 @@ impl PetriNet {
         if !self.places.is_empty() {
             writer.write("PLACE\n".as_bytes())?;
             if self.places.len() > 2 {
-                for place in 0..self.places.len() - 2 {
+                for place in 0..self.places.len() - 1 {
                     // if the place has a name: add it as comment
                     let line = if let Some(name) = &self.places.get(place).unwrap().name {
                         format!("    {},\t// {}\n", make_id(PREFIX, place), name)
@@ -73,7 +73,7 @@ impl PetriNet {
         if !self.places.is_empty() {
             let mut first = true;
             writer.write("MARKING\n".as_bytes())?;
-            for place in 0..self.places.len() - 1 {
+            for place in 0..self.places.len() {
                 let marking = self.places.get(place).unwrap().marking;
                 let line = if marking > 0 {
                     // first line has no ',' at the front
@@ -112,7 +112,7 @@ impl PetriNet {
         const PREFIX: &str = "t_";
         const PLACE_PREFIX: &str = "p_";
         if !self.transitions.is_empty() {
-            for t in 0..self.transitions.len() - 1 {
+            for t in 0..self.transitions.len() {
                 let line = if let Some(name) = &self.transitions.get(t).unwrap().name {
                     format!("TRANSITION {} // {}\n", make_id(PREFIX, t), name)
                 } else {

@@ -36,7 +36,7 @@ impl PetriNet {
         T: std::io::Write,
     {
         if !self.places.is_empty() {
-            for p in 0..self.places.len() - 1 {
+            for p in 0..self.places.len() {
                 let line = if let Some(name) = &self.places.get(p).unwrap().name {
                     format!(
                         "    {}{} [shape=\"circle\" label=\"{}\"];\n",
@@ -55,8 +55,10 @@ impl PetriNet {
     where
         T: std::io::Write,
     {
+        println!("empty t?:{}", self.transitions.is_empty());
+        println!("{}", self.transitions.len());
         if !self.transitions.is_empty() {
-            for t in 0..self.transitions.len() - 1 {
+            for t in 0..self.transitions.len() {
                 let line = if let Some(name) = &self.transitions.get(t).unwrap().name {
                     format!(
                         "    {}{} [shape=\"box\" label=\"{}\"];\n",

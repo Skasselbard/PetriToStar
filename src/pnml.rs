@@ -43,17 +43,17 @@ impl PetriNet {
         )?;
         writer.write(XmlEvent::start_element("page").attr("id", "page0"))?;
         if !self.places.is_empty() {
-            for place in 0..self.places.len() - 1 {
+            for place in 0..self.places.len() {
                 self.places.get(place).unwrap().to_xml(writer, place)?;
             }
         };
         if !self.transitions.is_empty() {
-            for trans in 0..self.transitions.len() - 1 {
+            for trans in 0..self.transitions.len() {
                 self.transitions.get(trans).unwrap().to_xml(writer, trans)?;
             }
         };
         if !self.arcs.is_empty() {
-            for arc in 0..self.arcs.len() - 1 {
+            for arc in 0..self.arcs.len() {
                 self.arcs.get(arc).unwrap().to_xml(writer, arc)?;
             }
         };
