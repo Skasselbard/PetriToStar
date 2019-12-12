@@ -37,14 +37,28 @@ impl PetriNet {
     {
         if !self.places.is_empty() {
             for p in 0..self.places.len() {
-                let line = if let Some(name) = &self.places.get(p).unwrap().name {
-                    format!(
-                        "    {}{} [shape=\"circle\" label=\"{}\"];\n",
-                        PLACE_PREFIX, p, name
-                    )
+                let marking = self.places.get(p).unwrap().marking;
+                let marking = if marking > 0 {
+                    let mut ret;
+                    if marking < 5 {
+                        ret = String::new();
+                        for _ in 0..marking {
+                            ret.push_str("•");
+                        }
+                    } else {
+                        ret = marking.to_string();
+                    };
+                    Some(ret)
                 } else {
-                    format!("    {}{} [shape=\"circle\"];\n", PLACE_PREFIX, p)
+                    None
                 };
+                let line = format_dot_node(
+                    PLACE_PREFIX,
+                    p,
+                    "circle",
+                    &marking,
+                    &self.places.get(p).unwrap().name,
+                );
                 writer.write(line.as_bytes())?;
             }
         }
@@ -59,14 +73,13 @@ impl PetriNet {
         println!("{}", self.transitions.len());
         if !self.transitions.is_empty() {
             for t in 0..self.transitions.len() {
-                let line = if let Some(name) = &self.transitions.get(t).unwrap().name {
-                    format!(
-                        "    {}{} [shape=\"box\" label=\"{}\"];\n",
-                        TRANSITION_PREFIX, t, name
-                    )
-                } else {
-                    format!("    {}{} [shape=\"box\"];\n", TRANSITION_PREFIX, t)
-                };
+                let line = format_dot_node(
+                    TRANSITION_PREFIX,
+                    t,
+                    "box",
+                    &self.transitions.get(t).unwrap().name,
+                    &None,
+                );
                 writer.write(line.as_bytes())?;
             }
         }
@@ -116,4 +129,26 @@ impl PetriNet {
         }
         Ok(())
     }
+}
+fn format_dot_node(
+    prefix: &str,
+    index: usize,
+    shape: &str,
+    label: &Option<String>,
+    caption: &Option<String>,
+) -> String {
+    let label = if let Some(label) = label {
+        format!("label=\"{}\" ", label)
+    } else {
+        String::new()
+    };
+    let caption = if let Some(caption) = caption {
+        format!("xlabel=\"{}\" ", caption)
+    } else {
+        String::new()
+    };
+    format!(
+        "    {}{} [shape=\"{}\" {} {}];\n",
+        prefix, index, shape, label, caption
+    )
 }
