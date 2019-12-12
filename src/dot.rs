@@ -39,11 +39,11 @@ impl PetriNet {
             for p in 0..self.places.len() - 1 {
                 let line = if let Some(name) = &self.places.get(p).unwrap().name {
                     format!(
-                        "    {}{} [shape=circle label=\"{}\"];\n",
+                        "    {}{} [shape=\"circle\" label=\"{}\"];\n",
                         PLACE_PREFIX, p, name
                     )
                 } else {
-                    format!("    {}{} [shape=circle];\n", PLACE_PREFIX, p)
+                    format!("    {}{} [shape=\"circle\"];\n", PLACE_PREFIX, p)
                 };
                 writer.write(line.as_bytes())?;
             }
@@ -59,11 +59,11 @@ impl PetriNet {
             for t in 0..self.transitions.len() - 1 {
                 let line = if let Some(name) = &self.transitions.get(t).unwrap().name {
                     format!(
-                        "    {}{} [shape=box label=\"{}\"];\n",
+                        "    {}{} [shape=\"box\" label=\"{}\"];\n",
                         TRANSITION_PREFIX, t, name
                     )
                 } else {
-                    format!("    {}{} [shape=box];\n", TRANSITION_PREFIX, t)
+                    format!("    {}{} [shape=\"box\"];\n", TRANSITION_PREFIX, t)
                 };
                 writer.write(line.as_bytes())?;
             }
