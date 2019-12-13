@@ -137,11 +137,15 @@ fn format_dot_node(
 ) -> String {
     let label = if let Some(label) = label {
         format!("label=\"{}\" ", label)
+            .replace("\n", "")
+            .replace("\"", "\\\"")
     } else {
         String::new()
     };
     let caption = if let Some(caption) = caption {
         format!("xlabel=\"{}\" ", caption)
+            .replace("\n", "")
+            .replace("\"", "\\\"")
     } else {
         String::new()
     };
