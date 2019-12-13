@@ -136,16 +136,18 @@ fn format_dot_node(
     caption: &Option<String>,
 ) -> String {
     let label = if let Some(label) = label {
-        format!("label=\"{}\" ", label)
-            .replace("\n", "")
-            .replace("\"", "\\\"")
+        format!(
+            "label=\"{}\" ",
+            label.replace("\n", "").replace("\"", "\\\"")
+        )
     } else {
         String::new()
     };
     let caption = if let Some(caption) = caption {
-        format!("xlabel=\"{}\" ", caption)
-            .replace("\n", "")
-            .replace("\"", "\\\"")
+        format!(
+            "xlabel=\"{}\" ",
+            caption.replace("\n", "").replace("\"", "\\\"")
+        )
     } else {
         String::new()
     };
