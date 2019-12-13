@@ -69,8 +69,6 @@ impl PetriNet {
     where
         T: std::io::Write,
     {
-        println!("empty t?:{}", self.transitions.is_empty());
-        println!("{}", self.transitions.len());
         if !self.transitions.is_empty() {
             for t in 0..self.transitions.len() {
                 let line = format_dot_node(
