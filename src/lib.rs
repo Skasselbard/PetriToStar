@@ -6,7 +6,9 @@ mod error;
 mod lola;
 mod pnml;
 
+use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::hash::Hash;
 
 use data::{Arc, Place, Transition};
 use error::PetriError;
@@ -23,22 +25,22 @@ pub struct PetriNet {
     arcs: Vec<Arc>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PlaceRef {
     index: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TransitionRef {
     index: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ArcRef {
     index: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NodeRef {
     Place(PlaceRef),
     Transition(TransitionRef),
@@ -57,13 +59,19 @@ impl PetriNet {
         self.places.push(Place {
             name: None,
             marking: 0,
+            preset: HashMap::new(),
+            postset: HashMap::new(),
         });
         NodeRef::Place(PlaceRef {
             index: self.places.len() - 1,
         })
     }
     pub fn add_transition(&mut self) -> NodeRef {
-        self.transitions.push(Transition { name: None });
+        self.transitions.push(Transition {
+            name: None,
+            preset: HashMap::new(),
+            postset: HashMap::new(),
+        });
         NodeRef::Transition(TransitionRef {
             index: self.transitions.len() - 1,
         })
@@ -77,6 +85,8 @@ impl PetriNet {
             sink,
             mult: 1,
         });
+        source.add_to_postset(self, sink)?;
+        sink.add_to_preset(self, source)?;
         Ok(ArcRef {
             index: self.arcs.len() - 1,
         })
@@ -117,6 +127,58 @@ impl NodeRef {
         *node_name = Some(name);
         Ok(())
     }
+
+    pub fn add_to_preset(self, net: &mut PetriNet, node: NodeRef) -> Result<()> {
+        match self {
+            NodeRef::Place(place) => {
+                let place = net
+                    .places
+                    .get_mut(place.index)
+                    .ok_or(PetriError::PlaceNotFound)?;
+                let transition_index = TransitionRef::try_from(node)?;
+                if let Some(mult) = place.preset.insert(transition_index, 1) {
+                    place.preset.insert(transition_index, mult + 1);
+                };
+            }
+            NodeRef::Transition(transition) => {
+                let transition = net
+                    .transitions
+                    .get_mut(transition.index)
+                    .ok_or(PetriError::TransitionNotFound)?;
+                let place_index = PlaceRef::try_from(node)?;
+                if let Some(mult) = transition.preset.insert(place_index, 1) {
+                    transition.preset.insert(place_index, mult + 1);
+                };
+            }
+        }
+        Ok(())
+    }
+
+    pub fn add_to_postset(self, net: &mut PetriNet, node: NodeRef) -> Result<()> {
+        match self {
+            NodeRef::Place(place) => {
+                let place = net
+                    .places
+                    .get_mut(place.index)
+                    .ok_or(PetriError::PlaceNotFound)?;
+                let transition_index = TransitionRef::try_from(node)?;
+                if let Some(mult) = place.postset.insert(transition_index, 1) {
+                    place.postset.insert(transition_index, mult + 1);
+                };
+            }
+            NodeRef::Transition(transition) => {
+                let transition = net
+                    .transitions
+                    .get_mut(transition.index)
+                    .ok_or(PetriError::TransitionNotFound)?;
+                let place_index = PlaceRef::try_from(node)?;
+                if let Some(mult) = transition.postset.insert(place_index, 1) {
+                    transition.postset.insert(place_index, mult + 1);
+                };
+            }
+        }
+        Ok(())
+    }
 }
 
 impl PlaceRef {
@@ -127,64 +189,42 @@ impl PlaceRef {
             .marking = marking;
         Ok(())
     }
-    pub fn preset(&self, net: &PetriNet) -> Vec<(TransitionRef, usize)> {
-        let (tp, _) = net.arcs_partitioned();
-        tp.iter()
-            .map(|(source, sink, mult)| {
-                (
-                    TransitionRef::try_from(*source).unwrap(),
-                    PlaceRef::try_from(*sink).unwrap(),
-                    mult,
-                )
-            })
-            .filter(|(place, _, _)| place.index == self.index)
-            .map(|(p, _, mult)| (TransitionRef::try_from(p).unwrap(), *mult))
-            .collect()
+
+    pub fn preset<'net>(&self, net: &'net PetriNet) -> Result<&'net HashMap<TransitionRef, usize>> {
+        Ok(&net
+            .places
+            .get(self.index)
+            .ok_or(PetriError::PlaceNotFound)?
+            .preset)
     }
-    pub fn postset(&self, net: &PetriNet) -> Vec<(TransitionRef, usize)> {
-        let (_, pt) = net.arcs_partitioned();
-        pt.iter()
-            .map(|(source, sink, mult)| {
-                (
-                    PlaceRef::try_from(*source).unwrap(),
-                    TransitionRef::try_from(*sink).unwrap(),
-                    mult,
-                )
-            })
-            .filter(|(_, place, _)| place.index == self.index)
-            .map(|(_, p, mult)| (TransitionRef::try_from(p).unwrap(), *mult))
-            .collect()
+
+    pub fn postset<'net>(
+        &self,
+        net: &'net PetriNet,
+    ) -> Result<&'net HashMap<TransitionRef, usize>> {
+        Ok(&net
+            .places
+            .get(self.index)
+            .ok_or(PetriError::PlaceNotFound)?
+            .postset)
     }
 }
 
 impl TransitionRef {
-    pub fn preset(&self, net: &PetriNet) -> Vec<(PlaceRef, usize)> {
-        let (_, pt) = net.arcs_partitioned();
-        pt.iter()
-            .map(|(source, sink, mult)| {
-                (
-                    PlaceRef::try_from(*source).unwrap(),
-                    TransitionRef::try_from(*sink).unwrap(),
-                    mult,
-                )
-            })
-            .filter(|(_, trans, _)| trans.index == self.index)
-            .map(|(p, _, mult)| (PlaceRef::try_from(p).unwrap(), *mult))
-            .collect()
+    pub fn preset<'net>(&self, net: &'net PetriNet) -> Result<&'net HashMap<PlaceRef, usize>> {
+        Ok(&net
+            .transitions
+            .get(self.index)
+            .ok_or(PetriError::TransitionNotFound)?
+            .preset)
     }
-    pub fn postset(&self, net: &PetriNet) -> Vec<(PlaceRef, usize)> {
-        let (tp, _) = net.arcs_partitioned();
-        tp.iter()
-            .map(|(source, sink, mult)| {
-                (
-                    TransitionRef::try_from(*source).unwrap(),
-                    PlaceRef::try_from(*sink).unwrap(),
-                    mult,
-                )
-            })
-            .filter(|(trans, _, _)| trans.index == self.index)
-            .map(|(_, p, mult)| (PlaceRef::try_from(p).unwrap(), *mult))
-            .collect()
+
+    pub fn postset<'net>(&self, net: &'net PetriNet) -> Result<&'net HashMap<PlaceRef, usize>> {
+        Ok(&net
+            .transitions
+            .get(self.index)
+            .ok_or(PetriError::TransitionNotFound)?
+            .postset)
     }
 }
 

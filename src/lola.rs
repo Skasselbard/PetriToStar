@@ -26,9 +26,9 @@ impl PetriNet {
 
     /// ```
     /// PLACE
-    ///     p_1, //name
+    ///     p_1,
     ///     ..
-    ///     p_n; //name
+    ///     p_n;
     /// ```
     fn write_lola_places<T>(&self, writer: &mut T) -> Result<(), std::io::Error>
     where
@@ -39,22 +39,13 @@ impl PetriNet {
             writer.write("PLACE\n".as_bytes())?;
             if self.places.len() > 2 {
                 for place in 0..self.places.len() - 1 {
-                    // if the place has a name: add it as comment
-                    let line = if let Some(name) = &self.places.get(place).unwrap().name {
-                        format!("    {},\t// {}\n", make_id(PREFIX, place), name)
-                    } else {
-                        format!("    {},\n", make_id(PREFIX, place))
-                    };
+                    let line = format!("    {},\n", make_id(PREFIX, place));
                     writer.write(line.as_bytes())?;
                 }
             };
             // last line has a semicolon
             let place = self.places.len() - 1;
-            let line = if let Some(name) = &self.places.get(place).unwrap().name {
-                format!("    {};\t// {}\n\n", make_id(PREFIX, place), name)
-            } else {
-                format!("    {};\n\n", make_id(PREFIX, place))
-            };
+            let line = format!("    {};\n\n", make_id(PREFIX, place));
             writer.write(line.as_bytes())?;
         }
         Ok(())
@@ -95,7 +86,7 @@ impl PetriNet {
     }
 
     /// ```
-    /// TRANSITION // name
+    /// TRANSITION
     ///   CONSUME
     ///     p_0 : 1,
     ///     p_1 : 2;
@@ -113,19 +104,18 @@ impl PetriNet {
         const PLACE_PREFIX: &str = "p_";
         if !self.transitions.is_empty() {
             for t in 0..self.transitions.len() {
-                let line = if let Some(name) = &self.transitions.get(t).unwrap().name {
-                    format!("TRANSITION {} // {}\n", make_id(PREFIX, t), name)
-                } else {
-                    format!("TRANSITION {}\n", make_id(PREFIX, t))
-                };
+                let line = format!("TRANSITION {}\n", make_id(PREFIX, t));
                 writer.write(line.as_bytes())?;
-                let consume = TransitionRef { index: t }.preset(self);
-                if let Some(first) = consume.first() {
+                let mut consume = TransitionRef { index: t }
+                    .preset(self)
+                    .expect("error in preset")
+                    .iter();
+                if let Some(first) = consume.next() {
                     writer.write("  CONSUME\n".as_bytes())?;
                     writer.write(
                         format!("    {}{} : {}", PLACE_PREFIX, first.0.index, first.1,).as_bytes(),
                     )?;
-                    for (place, mult) in consume.iter().next() {
+                    for (place, mult) in consume {
                         writer.write(
                             format!(",\n    {}{} : {}", PLACE_PREFIX, place.index, mult,)
                                 .as_bytes(),
@@ -133,13 +123,16 @@ impl PetriNet {
                     }
                     writer.write(";\n".as_bytes())?;
                 }
-                let produce = TransitionRef { index: t }.postset(self);
-                if let Some(first) = produce.first() {
+                let mut produce = TransitionRef { index: t }
+                    .postset(self)
+                    .expect("error in postsst")
+                    .iter();
+                if let Some(first) = produce.next() {
                     writer.write("  PRODUCE\n".as_bytes())?;
                     writer.write(
                         format!("    {}{} : {}", PLACE_PREFIX, first.0.index, first.1,).as_bytes(),
                     )?;
-                    for (place, mult) in consume.iter().next() {
+                    for (place, mult) in produce.next() {
                         writer.write(
                             format!(",\n    {}{} : {}", PLACE_PREFIX, place.index, mult,)
                                 .as_bytes(),
