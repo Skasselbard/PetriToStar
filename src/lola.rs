@@ -11,6 +11,9 @@ impl PetriNet {
     where
         T: std::io::Write,
     {
+        if self.print_unconnected_nodes().is_err() {
+            panic!("Cannot find all nodes: this is a bug!");
+        };
         self.write_lola(writer)?;
         Ok(())
     }

@@ -6,7 +6,9 @@ mod error;
 mod lola;
 mod pnml;
 
-use std::collections::HashMap;
+use log::info;
+
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::hash::Hash;
 
@@ -104,6 +106,62 @@ impl PetriNet {
             .iter()
             .map(|arc| (arc.source, arc.sink, arc.mult))
             .partition(|(source, _, _)| TransitionRef::try_from(*source).is_ok())
+    }
+
+    pub fn get_unconnected_nodes(&self) -> Result<HashSet<NodeRef>> {
+        let mut set = HashSet::new();
+        for index in 0..self.transitions.len() {
+            let node = self
+                .transitions
+                .get(index)
+                .ok_or(PetriError::TransitionNotFound)?;
+            if node.preset.is_empty() && node.postset.is_empty() {
+                set.insert(NodeRef::Transition(TransitionRef { index }));
+            }
+        }
+        for index in 0..self.places.len() {
+            let node = self.places.get(index).ok_or(PetriError::PlaceNotFound)?;
+            if node.preset.is_empty() && node.postset.is_empty() {
+                set.insert(NodeRef::Place(PlaceRef { index }));
+            }
+        }
+        Ok(set)
+    }
+
+    fn print_unconnected_nodes(&self) -> Result<()> {
+        for node in self.get_unconnected_nodes()? {
+            let kind;
+            let index;
+            let name;
+            match node {
+                NodeRef::Place(place) => {
+                    kind = "place";
+                    index = place.index;
+                    name = self
+                        .places
+                        .get(index)
+                        .ok_or(PetriError::PlaceNotFound)?
+                        .name
+                        .as_ref();
+                }
+                NodeRef::Transition(trans) => {
+                    kind = "transition";
+                    index = trans.index;
+                    name = self
+                        .transitions
+                        .get(index)
+                        .ok_or(PetriError::TransitionNotFound)?
+                        .name
+                        .as_ref();
+                }
+            }
+            if let Some(name) = name {
+                info!("unconnected: {}_{}\t{}", kind, index, name);
+            } else {
+                info!("unconnected: {}_{}", kind, index);
+            }
+        }
+        Ok(())
     }
 }
 
