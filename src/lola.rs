@@ -135,7 +135,7 @@ impl PetriNet {
                     writer.write(
                         format!("    {}{} : {}", PLACE_PREFIX, first.0.index, first.1,).as_bytes(),
                     )?;
-                    for (place, mult) in produce.next() {
+                    for (place, mult) in produce {
                         writer.write(
                             format!(",\n    {}{} : {}", PLACE_PREFIX, place.index, mult,)
                                 .as_bytes(),
